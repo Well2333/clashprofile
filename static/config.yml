@@ -1,0 +1,16 @@
+subscribes:
+  - name: JMS
+    type: jms
+    url: https://jmssub.net/members/getsub.php?service=<service>&id=<id>
+    counter: https://justmysocks5.net/members/getbwcounter.php?service=<service>&id=<id>
+    subtz: America/Los_Angeles
+templates:
+  - blacklist
+  - whitelist
+download_sem : 3
+download_retry : 3
+
+domian: http://0.0.0.0:46199
+host: 0.0.0.0
+port: 46199
+urlprefix: /path/to/mess/url
