@@ -5,7 +5,7 @@ from typing import Literal, Optional
 import yaml
 from loguru import logger
 from pydantic import BaseModel, Extra, validator
-from pytz import timezone,UnknownTimeZoneError
+from pytz import timezone, UnknownTimeZoneError
 
 DEFUALT_CONFIG_PATH = Path("config.yml")
 
@@ -21,7 +21,6 @@ def check_port(p):
 
 
 class Subscribe(BaseModel, extra=Extra.allow):
-    name: str
     type: Literal["jms"]
     url: str
     counter: Optional[str]
@@ -29,31 +28,59 @@ class Subscribe(BaseModel, extra=Extra.allow):
 
     # validators
     @validator("subtz")
-    def format_urlprefix(cls, v: str):
+    def validate_timezone(cls, v: str):
         try:
             timezone(v)
         except UnknownTimeZoneError as e:
             raise e
         return v
 
+class Profile(BaseModel):
+    template: str
+    subs: list[str]
+
 
 class Config(BaseModel):
-    subscribes: list[Subscribe]
     download_sem: int = 4
     download_retry: int = 3
-    templates: list[str]
+    update_cron: str = "35 6 * * *"
+    update_tz: str = "Asia/Shanghai"
 
     domian: str = "http://0.0.0.0:46199"
     host: str = "0.0.0.0"
     port: int = 46199
     urlprefix: str = "/path/to/mess/url"
-    
+
+    subscribes: dict[str, Subscribe]
+    profiles: dict[str, Profile]
+
     # validators
     _port = validator("port", allow_reuse=True)(check_port)
+
+    @validator("update_tz")
+    def validate_timezone(cls, v: str):
+        try:
+            timezone(v)
+        except UnknownTimeZoneError as e:
+            raise e
+        return v
 
     @validator("urlprefix")
     def format_urlprefix(cls, v: str):
         return v.strip("/")
+    
+    @validator("profiles")
+    def validate_profiles(cls, v:dict[str, Profile], values):
+        for profile in v.values():
+            # check template
+            if not Path(f"data/template/{profile.template}.yml").exists():
+                raise ValueError(f"template {profile.template}.yml not exists")
+            # check subscribes
+            for sub in profile.subs:
+                if sub not in values["subscribes"].keys():
+                    raise ValueError(f"subscribe {sub} not exists")
+        return v
+                
 
     @staticmethod
     def _create_file(file: Path = DEFUALT_CONFIG_PATH):

@@ -142,21 +142,23 @@ class JMS:
 class Subscribe:
     @staticmethod
     async def subs(
+        subs: list[str],
         download: Optional[Download],
     ) -> list[Union[SS, SSR, Vmess, Socks5, Snell, Trojan]]:
         download = Download() if download is None else download
         proxies = []
-        for sub in config.subscribes:
+        for name in subs:
+            sub = config.subscribes[name]
             if sub.type == "jms":
                 proxies += await JMS.get(sub.url, download)
         return proxies
 
     @staticmethod
-    async def counter():
-        if len(config.subscribes) != 1:
+    async def counter(profile: str):
+        if len(config.profiles[profile].subs) > 1:
             logger.warning("Subscribes are more than 1, counter function disabled")
             return ""
-        sub = config.subscribes[0]
+        sub = config.subscribes[config.profiles[profile].subs[0]]
         if sub.type == "jms" and sub.counter:
             return await JMS.counter(sub.counter, sub.subtz)
 
@@ -166,17 +168,19 @@ async def update():
     download = Download()
     try:
         rulesets = {}
-        proxies = await Subscribe.subs(download)
-        for name in config.templates:
-            logger.info(f"Start generating configuration from template {name}")
-            template = ClashTemplate.load(name)
+        for profile in config.profiles:
+            proxies = await Subscribe.subs(config.profiles[profile].subs, download)
+            logger.info(
+                f"Start generating profile {profile} from template {config.profiles[profile].template}"
+            )
+            template = ClashTemplate.load(config.profiles[profile].template)
             clash = template.render(proxies)
             for provider in clash.rule_providers:
                 rulesets[provider] = clash.rule_providers[provider].url
                 clash.rule_providers[provider].url = "/".join(
                     [config.domian, config.urlprefix, "provider", f"{provider}.yml"]
                 )
-            clash.save(name)
+            clash.save(profile)
         await download.provider(rulesets)
         logger.success("Update complete")
 
