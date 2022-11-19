@@ -34,8 +34,8 @@ async def profile(path:str):
     )
     
     resp.headers["subscription-userinfo"] = await Subscribe.counter(path[:-4])
-    resp.headers["cache-Control"] = "no-store,no-cache,must-revalidate"
-    resp.headers["profile-update-interval"] = "24"
+    for h in config.headers:
+        resp.headers[h] = config.headers[h]
     return resp
 
 

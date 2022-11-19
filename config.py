@@ -24,7 +24,7 @@ class Subscribe(BaseModel, extra=Extra.allow):
     type: Literal["jms"]
     url: str
     counter: Optional[str]
-    subtz: Optional[str]
+    subtz: Optional[str] = "Asia/Shanghai"
 
     # validators
     @validator("subtz")
@@ -34,6 +34,7 @@ class Subscribe(BaseModel, extra=Extra.allow):
         except UnknownTimeZoneError as e:
             raise e
         return v
+
 
 class Profile(BaseModel):
     template: str
@@ -50,6 +51,7 @@ class Config(BaseModel):
     host: str = "0.0.0.0"
     port: int = 46199
     urlprefix: str = "/path/to/mess/url"
+    headers: dict[str, str] = {"profile-update-interval": "24"}
 
     subscribes: dict[str, Subscribe]
     profiles: dict[str, Profile]
@@ -68,9 +70,9 @@ class Config(BaseModel):
     @validator("urlprefix")
     def format_urlprefix(cls, v: str):
         return v.strip("/")
-    
+
     @validator("profiles")
-    def validate_profiles(cls, v:dict[str, Profile], values):
+    def validate_profiles(cls, v: dict[str, Profile], values):
         for profile in v.values():
             # check template
             if not Path(f"data/template/{profile.template}.yml").exists():
@@ -80,7 +82,6 @@ class Config(BaseModel):
                 if sub not in values["subscribes"].keys():
                     raise ValueError(f"subscribe {sub} not exists")
         return v
-                
 
     @staticmethod
     def _create_file(file: Path = DEFUALT_CONFIG_PATH):

@@ -19,6 +19,9 @@
 目前支持的服务商/订阅方式:
 
 - [Just My Socks](https://justmysocks3.net/members/index.php)
+  - 类型： `jms`
+  - 特殊配置项：
+    - counter：节点的剩余流量API
 
 计划支持的提供商/订阅方式:
 
@@ -46,7 +49,62 @@
 
 ## 项目配置文件
 
-咕咕咕
+```yaml
+# ========== 下载相关设置 ==========
+## 下载的最大携程数
+download_sem: 3
+## 下载失败的重试次数
+download_retry: 3
+
+#  ========== 更新相关设置 ==========
+## 触发更新的cron表达式，仅支持五位表达式
+## 其格式为: 分 时 日 月 周
+update_cron: 35 6 * * *
+## 更新所参考的时区，如果是国内用户可以不改
+update_tz: Asia/Shanghai
+
+# ========== API相关设置 ==========
+## 填写到配置文件中的服务器域名/IP地址
+## 如果填写错误可能造成规则集无法更新成功
+domian: http://<your.host.name>:46199
+## fastapi监听的地址，一般情况下不需要改动
+host: 0.0.0.0
+## fastapi监听的端口，请与domain保持一致
+port: 46199
+## 监听的路径前缀，例如在默认值时，监听地址为
+## http://0.0.0.0:46199/path/to/mess/url
+## 主要目的是为了混淆url地址，使其不易被误触
+urlprefix: /path/to/mess/url
+## 响应配置文件中包含的 headers，用于填充额外
+## 数据，但请不要配置 subscription-userinfo
+## 此项将会根据配置信息，由脚本自动生成并添加
+headers:
+  cache-Control: "no-store,no-cache,must-revalidate"
+  profile-update-interval: "24"
+
+# ========== 订阅相关设置 ==========
+subscribes:
+  JMS: # 节点名，可以自定义，注意不要重名
+    # 节点的服务商，请参考文档获取支持的服务商
+    type: jms
+    # 节点的订阅地址
+    url: https://jmssub.net/members/getsub.php?service=<service>&id=<id>
+    # <特殊,可选>节点的剩余流量API
+    counter: https://justmysocks5.net/members/getbwcounter.php?service=<service>&id=<id>
+    # <可选>节点的时区信息，用于计算到期时间
+    subtz: America/Los_Angeles
+
+# ========== 配置文件相关设置 ==========
+profiles:
+  JMS-blacklist: # 配置文件名，注意不要重名
+    template: blacklist # 使用的模板
+    subs: # 使用的节点，可添加多个节点
+      - JMS # 节点名为订阅信息中的节点名
+  whitelist-jms:
+    template: whitelist
+    subs:
+      - JMS
+```
 
 ## 项目部署
 
