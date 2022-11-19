@@ -60,7 +60,7 @@ class Clash(ClashTemplate):
     proxy_groups: list[ProxyGroup] = Field(alias="proxy-groups")
 
     def save(self, file: str) -> None:
-        Path(f"data/{file}.yml").write_text(
+        Path(f"data/profile/{file}.yml").write_text(
             yaml.dump(
                 self.dict(exclude_none=True, by_alias=True),
                 sort_keys=False,

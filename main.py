@@ -4,43 +4,50 @@ import shutil
 import uvicorn
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
 from starlette.responses import FileResponse
 
-app = FastAPI()
-
+# check dirs and files
+os.makedirs("data/profile", 0o777, True)
 os.makedirs("data/provider", 0o777, True)
 os.makedirs("data/template", 0o777, True)
 if len(os.listdir("data/template")) == 0:
     shutil.copytree("static/template/", "data/template/", dirs_exist_ok=True)
+# remove old profiles
+for f in os.listdir("data/profile"):
+    os.remove(f"data/profile/{f}")
 
 
 from config import config
-from updater import Subscribe, update
+from log import LOGGING_CONFIG
+from subscribe import counter, update
 
+app = FastAPI()
 
-@app.get(f"/{config.urlprefix}/provider" + "/{path}")
-async def provider(path):
-    return FileResponse(
-        path=f"data/provider/{path}",
-    )
+# provider download
+app.mount(f"/{config.urlprefix}/provider", StaticFiles(directory="data/provider"))
 
-
+# profile download
 @app.get(f"/{config.urlprefix}/profile" + "/{path}")
-async def profile(path:str):
+async def profile(path: str):
+    logger.info("A request to download profile {path} was received")
+    if path[:-4] not in config.profiles.keys():
+        raise HTTPException(404, f"Profile {path} not found")
     resp = FileResponse(
-        path=f"data/{path}",
+        path=f"data/profile/{path}",
     )
-    
-    resp.headers["subscription-userinfo"] = await Subscribe.counter(path[:-4])
+    resp.headers["subscription-userinfo"] = await counter(path[:-4])
     for h in config.headers:
         resp.headers[h] = config.headers[h]
     return resp
 
 
+# manual update trigger
 @app.get(f"/{config.urlprefix}/update")
 async def _():
+    logger.info("Update is triggered manually")
     await update()
     return "update complete"
 
@@ -48,14 +55,18 @@ async def _():
 @app.on_event("startup")
 async def startup_event():
     await update()
+    logger.info(
+        f"Starting up scheduler from crontab {config.update_cron} at timezone {config.update_tz}"
+    )
     scheduler = AsyncIOScheduler()
     scheduler.add_job(
         update, CronTrigger.from_crontab(config.update_cron, config.update_tz)
     )
-    logger.info("Starting up scheduler")
     scheduler.start()
+    logger.info(
+        f"Application startup complete, listening requests from {config.domian}/{config.urlprefix}/"
+    )
 
 
 if __name__ == "__main__":
-    logger.info("Application starting up...")
-    uvicorn.run(app, host=config.host, port=config.port)
+    uvicorn.run(app, host=config.host, port=config.port, log_config=LOGGING_CONFIG)

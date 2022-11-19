@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "clashprofile"
-version = "1.2.0"
+version = "1.3.0"
 description = "通过订阅链接生成clash配置文件。"
 authors = ["Well404 <well_404@outlook.com>"]
 readme = "README.md"
@@ -18,6 +18,10 @@ pydantic = "^1.10.2"
 
 [tool.poetry.group.dev.dependencies]
 black = {version = "^22.10.0", allow-prereleases = true}
+
+# [[tool.poetry.source]]
+# name = "aliyun"
+# url = "https://mirrors.aliyun.com/pypi/simple/"
 
 [build-system]
 requires = ["poetry-core"]

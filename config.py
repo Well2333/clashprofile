@@ -41,9 +41,12 @@ class Profile(BaseModel):
     subs: list[str]
 
 
-class Config(BaseModel):
+class Config(BaseModel, extra=Extra.ignore):
+    log_level: Literal["TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
+
     download_sem: int = 4
     download_retry: int = 3
+
     update_cron: str = "35 6 * * *"
     update_tz: str = "Asia/Shanghai"
 
