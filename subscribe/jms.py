@@ -1,7 +1,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 from pytz import timezone
 
@@ -79,7 +79,7 @@ def vmess(sub: str) -> "Vmess":
     )
 
 
-async def get(url: str, download: Optional[Download]) -> list[Union[SS, Vmess]]:
+async def get(url: str, download: Optional[Download]) -> List[Union[SS, Vmess]]:
     download = Download() if download is None else download
     bsubs = await download.content(url)
     subs = base64.decodebytes(bsubs).decode().split("\n")

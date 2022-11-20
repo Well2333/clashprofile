@@ -32,7 +32,7 @@ app.mount(f"/{config.urlprefix}/provider", StaticFiles(directory="data/provider"
 # profile download
 @app.get(f"/{config.urlprefix}/profile" + "/{path}")
 async def profile(path: str):
-    logger.info("A request to download profile {path} was received")
+    logger.info(f"A request to download profile {path} was received")
     if path[:-4] not in config.profiles.keys():
         raise HTTPException(404, f"Profile {path} not found")
     resp = FileResponse(
@@ -48,13 +48,15 @@ async def profile(path: str):
 @app.get(f"/{config.urlprefix}/update")
 async def _():
     logger.info("Update is triggered manually")
-    await update()
-    return "update complete"
+    error = await update()
+    return str(error) or "update complete"
 
 
 @app.on_event("startup")
 async def startup_event():
-    await update()
+    error = await update()
+    if error:
+        raise error
     logger.info(
         f"Starting up scheduler from crontab {config.update_cron} at timezone {config.update_tz}"
     )

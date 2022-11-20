@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 from loguru import logger
 
@@ -9,9 +9,9 @@ from utils import Download
 
 
 async def _subs(
-    subs: list[str],
+    subs: List[str],
     download: Optional[Download],
-) -> list[Union[SS, SSR, Vmess, Socks5, Snell, Trojan]]:
+) -> List[Union[SS, SSR, Vmess, Socks5, Snell, Trojan]]:
     download = Download() if download is None else download
     proxies = []
     for name in subs:
@@ -33,18 +33,19 @@ async def update():
             )
             template = ClashTemplate.load(config.profiles[profile].template)
             clash = template.render(proxies)
-            for provider in clash.rule_providers:
-                rulesets[provider] = clash.rule_providers[provider].url
-                clash.rule_providers[provider].url = "/".join(
-                    [config.domian, config.urlprefix, "provider", f"{provider}.yml"]
-                )
+            if clash.rule_providers:
+                for provider in clash.rule_providers:
+                    rulesets[provider] = clash.rule_providers[provider].url
+                    clash.rule_providers[provider].url = "/".join(
+                        [config.domian, config.urlprefix, "provider", f"{provider}.yml"]
+                    )
             clash.save(profile)
         await download.provider(rulesets)
         logger.success("Update complete")
 
     except Exception as e:
-        logger.exception(e)
-        logger.critical("A fatal error occurred. The update process has been stopped")
+        logger.critical(e)
+        return e
 
 
 async def counter(profile: str):

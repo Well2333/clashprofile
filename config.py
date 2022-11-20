@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal, Optional, List
 
 import yaml
 from loguru import logger
@@ -12,10 +12,10 @@ DEFUALT_CONFIG_PATH = Path("config.yml")
 
 def check_port(p):
     if p > 65535 or p <= 0:
-        raise ValueError(f"The port number must be in the range 0 to 65535, not {p}")
+        raise ValueError(f"Port number must be in the range 0 to 65535, not {p}")
     if p <= 1023 and p not in [80, 443]:
         logger.warning(
-            f"The port number should preferably be greater than 1023, not {p}"
+            f"Port number should preferably be greater than 1023, not {p}"
         )
     return p
 
@@ -38,7 +38,7 @@ class Subscribe(BaseModel, extra=Extra.allow):
 
 class Profile(BaseModel):
     template: str
-    subs: list[str]
+    subs: List[str]
 
 
 class Config(BaseModel, extra=Extra.ignore):
