@@ -32,7 +32,7 @@ class Download:
             bfile = await self.content(url)
 
             if bfile:
-                with open(f"data/provider/{name}.yml", "wb") as f:
+                with open(f"data/provider/{name}.yaml", "wb") as f:
                     f.write(updatetime.encode())
                     f.write(bfile)
 

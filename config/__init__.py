@@ -1,48 +1,25 @@
 import json
 from pathlib import Path
-from typing import Literal, Optional, List
+from typing import List, Literal, Optional, Union
 
 import yaml
-from loguru import logger
 from pydantic import BaseModel, Extra, validator
-from pytz import timezone, UnknownTimeZoneError
 
-DEFUALT_CONFIG_PATH = Path("config.yml")
+from config.subscribe import JMS, ClashSub, ClashFile
+from config.tools import check_port, check_timezone
 
-
-def check_port(p):
-    if p > 65535 or p <= 0:
-        raise ValueError(f"Port number must be in the range 0 to 65535, not {p}")
-    if p <= 1023 and p not in [80, 443]:
-        logger.warning(
-            f"Port number should preferably be greater than 1023, not {p}"
-        )
-    return p
-
-
-class Subscribe(BaseModel, extra=Extra.allow):
-    type: Literal["jms"]
-    url: str
-    counter: Optional[str]
-    subtz: Optional[str] = "Asia/Shanghai"
-
-    # validators
-    @validator("subtz")
-    def validate_timezone(cls, v: str):
-        try:
-            timezone(v)
-        except UnknownTimeZoneError as e:
-            raise e
-        return v
+DEFUALT_CONFIG_PATH = Path("config.yaml")
 
 
 class Profile(BaseModel):
     template: str
-    subs: List[str]
+    subs: List[str] = []
 
 
 class Config(BaseModel, extra=Extra.ignore):
-    log_level: Literal["TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
+    log_level: Literal[
+        "TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+    ] = "INFO"
 
     download_sem: int = 4
     download_retry: int = 3
@@ -56,21 +33,14 @@ class Config(BaseModel, extra=Extra.ignore):
     urlprefix: str = "/path/to/mess/url"
     headers: dict[str, str] = {"profile-update-interval": "24"}
 
-    subscribes: dict[str, Subscribe]
+    subscribes: dict[str, Union[JMS, ClashSub, ClashFile]]
     profiles: dict[str, Profile]
 
     # validators
     _port = validator("port", allow_reuse=True)(check_port)
+    _tz = validator("update_tz", allow_reuse=True)(check_timezone)
 
-    @validator("update_tz")
-    def validate_timezone(cls, v: str):
-        try:
-            timezone(v)
-        except UnknownTimeZoneError as e:
-            raise e
-        return v
-
-    @validator("urlprefix")
+    @validator("urlprefix", "domian", pre=True)
     def format_urlprefix(cls, v: str):
         return v.strip("/")
 
@@ -78,8 +48,8 @@ class Config(BaseModel, extra=Extra.ignore):
     def validate_profiles(cls, v: dict[str, Profile], values):
         for profile in v.values():
             # check template
-            if not Path(f"data/template/{profile.template}.yml").exists():
-                raise ValueError(f"template {profile.template}.yml not exists")
+            if not Path(f"data/template/{profile.template}.yaml").exists():
+                raise ValueError(f"template {profile.template}.yaml not exists")
             # check subscribes
             for sub in profile.subs:
                 if sub not in values["subscribes"].keys():
@@ -89,7 +59,7 @@ class Config(BaseModel, extra=Extra.ignore):
     @staticmethod
     def _create_file(file: Path = DEFUALT_CONFIG_PATH):
         file.write_text(
-            Path("static/config.exp.yml").read_text(encoding="utf-8"),
+            Path("static/config.exp.yaml").read_text(encoding="utf-8"),
             encoding="utf-8",
         )
 

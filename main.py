@@ -32,13 +32,16 @@ app.mount(f"/{config.urlprefix}/provider", StaticFiles(directory="data/provider"
 # profile download
 @app.get(f"/{config.urlprefix}/profile" + "/{path}")
 async def profile(path: str):
+    path = path.rsplit(".",1)[0] + ".yaml"
     logger.info(f"A request to download profile {path} was received")
-    if path[:-4] not in config.profiles.keys():
+    if path[:-5] not in config.profiles.keys():
         raise HTTPException(404, f"Profile {path} not found")
     resp = FileResponse(
         path=f"data/profile/{path}",
     )
-    resp.headers["subscription-userinfo"] = await counter(path[:-4])
+    counter_info = await counter(path[:-5])
+    if counter_info:
+        resp.headers["subscription-userinfo"] = counter_info
     for h in config.headers:
         resp.headers[h] = config.headers[h]
     return resp

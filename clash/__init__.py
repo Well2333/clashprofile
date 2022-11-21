@@ -49,7 +49,7 @@ class ClashTemplate(BaseModel, extra=Extra.allow):
             # check proxy_groups
             if r[-1].upper() not in pg_name:
                 # except in some case
-                if r[-1].lower() == "no-resolve" and r[1].upper() in ["GEOIP", "IP-CIDR", "IP-CIDR6", "RULE-SET"] and r[-2] in pg_name:
+                if r[-1].lower() == "no-resolve" and r[0].upper() in ["GEOIP", "IP-CIDR", "IP-CIDR6", "RULE-SET"] and r[-2] in pg_name:
                     continue
                 raise ValueError(f'Undefined proxy-groups "{r[-1]}"": {rule}')
             # check rule-set
@@ -76,13 +76,14 @@ class ClashTemplate(BaseModel, extra=Extra.allow):
     def load(cls, file: str) -> "ClashTemplate":
         return cls.parse_obj(
             yaml.load(
-                Path(f"data/template/{file}.yml").read_bytes(), Loader=yaml.FullLoader
+                Path(f"data/template/{file}.yaml").read_bytes(), Loader=yaml.FullLoader
             )
         )
 
     def render(
         self, proxies: List[Union[SS, SSR, Vmess, Socks5, Snell, Trojan]]
     ) -> "Clash":
+        if not proxies: return Clash.parse_obj(self.dict(exclude_none=True, by_alias=True))
         proxies_name_list = [proxy.name for proxy in proxies]
         proxy_groups = []
         for group in self.proxy_groups:
@@ -100,7 +101,7 @@ class Clash(ClashTemplate):
     proxy_groups: List[ProxyGroup] = Field(alias="proxy-groups")
 
     def save(self, file: str) -> None:
-        Path(f"data/profile/{file}.yml").write_text(
+        Path(f"data/profile/{file}.yaml").write_text(
             yaml.dump(
                 self.dict(exclude_none=True, by_alias=True,exclude_unset=True),
                 sort_keys=False,
