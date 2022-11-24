@@ -1,11 +1,11 @@
 import json
 from pathlib import Path
-from typing import List, Literal, Optional, Union
+from typing import Dict, List, Literal, Union
 
 import yaml
 from pydantic import BaseModel, Extra, validator
 
-from config.subscribe import JMS, ClashSub, ClashFile
+from config.subscribe import JMS, ClashFile, ClashSub
 from config.tools import check_port, check_timezone
 
 DEFUALT_CONFIG_PATH = Path("config.yaml")
@@ -31,10 +31,10 @@ class Config(BaseModel, extra=Extra.ignore):
     host: str = "0.0.0.0"
     port: int = 46199
     urlprefix: str = "/path/to/mess/url"
-    headers: dict[str, str] = {"profile-update-interval": "24"}
+    headers: Dict[str, str] = {"profile-update-interval": "24"}
 
-    subscribes: dict[str, Union[JMS, ClashSub, ClashFile]]
-    profiles: dict[str, Profile]
+    subscribes: Dict[str, Union[JMS, ClashSub, ClashFile]]
+    profiles: Dict[str, Profile]
 
     # validators
     _port = validator("port", allow_reuse=True)(check_port)
@@ -45,7 +45,7 @@ class Config(BaseModel, extra=Extra.ignore):
         return v.strip("/")
 
     @validator("profiles")
-    def validate_profiles(cls, v: dict[str, Profile], values):
+    def validate_profiles(cls, v: Dict[str, Profile], values):
         for profile in v.values():
             # check template
             if not Path(f"data/template/{profile.template}.yaml").exists():

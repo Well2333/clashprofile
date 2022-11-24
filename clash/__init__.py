@@ -1,13 +1,13 @@
 from pathlib import Path
-from typing import Literal, Union, Optional, List, Sequence
+from typing import Dict, List, Literal, Optional, Sequence, Union
 
 import yaml
 from pydantic import BaseModel, Extra, Field, validator
 
-from config import check_port
-from clash.proxy import SS, SSR, Vmess, Socks5, Snell, Trojan
+from clash.proxy import SS, SSR, Snell, Socks5, Trojan, Vmess
 from clash.proxygroup import ProxyGroup, ProxyGroupTemplate
 from clash.ruleprovider import RuleProvider
+from config import check_port
 
 
 class ClashTemplate(BaseModel, extra=Extra.allow):
@@ -23,7 +23,7 @@ class ClashTemplate(BaseModel, extra=Extra.allow):
         List[Union[SS, SSR, Vmess, Socks5, Snell, Trojan]], Literal["__proxies_list__"]
     ]
     proxy_groups: List[ProxyGroupTemplate] = Field(alias="proxy-groups")
-    rule_providers: Optional[dict[str, RuleProvider]] = Field(alias="rule-providers")
+    rule_providers: Optional[Dict[str, RuleProvider]] = Field(alias="rule-providers")
     rules: List[str]
 
     # validators

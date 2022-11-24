@@ -25,7 +25,7 @@ class Download:
             )
             return b""
 
-    async def provider(self, rulesets: dict[str, str]) -> None:
+    async def provider(self, rulesets) -> None:
         async def download_and_write(name: str, url: str):
 
             logger.debug(f"downloading ruleset: {name}")
